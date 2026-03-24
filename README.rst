@@ -465,7 +465,7 @@ Additional Resources
 - `Universal Scene Description (USD) <https://graphics.pixar.com/usd/>`_
 - `NVIDIA PhysX <https://developer.nvidia.com/physx-sdk>`_
 - `Polyscope Visualization <https://polyscope.run/>`_
-- `Motion Planning Library (MPLib) <https://github.com/roboscience-ai/mplib>`_
+- `Motion Planning Library (MPLib) <https://github.com/haosulab/mplib>`_
 
 Acknowledgments
 ===============
