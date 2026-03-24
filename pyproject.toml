@@ -1,0 +1,82 @@
+[project]
+name = "u2u"
+dynamic = ["version"]
+description = "Parse USD scene to libuipc and run physics simulation"
+readme = "README.rst"
+requires-python = ">=3.11"
+authors = [{name = "zhiguo"}]
+license = {text = "Apache-2.0"}
+dependencies = [
+    "numpy==1.26.0",
+    "loguru>=0.7.3",
+    "polyscope>=2.4.0",
+    "scipy>=1.15.3",
+    "tetgen<0.6.5",
+    "trimesh>=4.6.12",
+    "types-usd==24.5.2",
+    "pyuipc==0.9.0+2df47c7.cu128; sys_platform == 'linux' or sys_platform == 'win32'",
+    "usd-core==25.5",
+    "urdf-parser-py>=0.0.4",
+    "pre-commit>=4.2.0",
+    "pandas>=2.3.1",
+    "keyboard",
+    "grpcio>=1.74.0",
+    "grpcio-tools>=1.74.0",
+    "warp-lang>=1.11.1",
+    "pymeshfix==0.18.0",
+    "pyvista>=0.46.5",
+    "coacd==1.0.7",
+]
+
+[dependency-groups]
+dev = [
+    "livereload>=2.7.1",
+    "mypy>=1.16.0; platform_system != 'Windows'",
+    "pip>=25.1.1",
+    "pybind11>=2.13.6",
+    "pytest>=8.0.0",
+    "scipy-stubs==1.16.0.2",
+    "pre-commit>=4.2.0",
+    "sphinx>=8.2.3",
+    "sphinx-rtd-theme>=3.0.2",
+    "sphinxcontrib-video>=0.4.1",
+]
+examples = ["toppra", "mplib", "polyscope>=2.4.0", "tqdm>=4.67.1"]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+local_scheme = "node-and-date"
+
+[tool.hatch.build.targets.wheel]
+packages = ["u2u"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [".ci-cache", ".venv"]
+
+[tool.uv]
+index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+
+[[tool.uv.index]]
+name = "default"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+[tool.uv.sources]
+pyuipc = [
+    { url = "https://github.com/hugooole/pyuipc-dist/releases/download/v0.9.0.2be9945/pyuipc-0.9.0+2df47c7.cu128-cp311-cp311-linux_x86_64.whl", marker = "sys_platform == 'linux'" },
+    { url = "https://github.com/hugooole/pyuipc-dist/releases/download/v0.9.0.2be9945/pyuipc-0.9.0+2df47c75.cu128-cp311-cp311-win_amd64.whl", marker = "sys_platform == 'win32'" },
+]
+
+# Note: Project only supports Linux and Windows. macOS users need to build from source.
+toppra = [
+    { index = "default", marker = "sys_platform == 'linux'" },
+]
+mplib = [
+    { index = "default", marker = "sys_platform == 'linux'" },
+]

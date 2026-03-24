@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package rbs.api.proto.math;
+
+import "u2u/proto/api/math/rotation.proto";
+import "u2u/proto/api/math/vec.proto";
+
+message Pose {
+  Vec3d translation = 1;
+  Quaternion rotation = 2;
+}
+
+message Rigid2d {
+  Vec2d translation = 1;
+  double rotation = 2;
+}
+
+message Rigid2f {
+  Vec2f translation = 1;
+  float rotation = 2;
+}
+
+message Rigid3d {
+  Vec3d translation = 1;
+  Quaternion rotation = 2;
+}
+
+message Rigid3f {
+  Vec3f translation = 1;
+  Quaternion rotation = 2;
+}

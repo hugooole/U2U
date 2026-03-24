@@ -1,0 +1,39 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: U2U
+Upstream-Contact: zhiguo <zhiguo@example.com>
+
+Files: u2u/*.py examples/*.py
+Copyright: 2025 zhiguo
+License: Apache-2.0
+
+Files: assets/* *.ini build/* dist/*
+Copyright: 2025 zhiguo
+License: Apache-2.0
+
+# Configuration and documentation files
+Files: .gitignore .gitattributes .python-version .pre-commit-config.yaml
+Copyright: 2025 zhiguo
+License: Apache-2.0
+
+Files: pyproject.toml skillkit.yaml README.rst CLAUDE.md COPYRIGHT_SETUP.md REUSE.md
+Copyright: 2025 zhiguo
+License: Apache-2.0
+
+# Proto files
+Files: u2u/proto/api/math/*.proto u2u/proto/api/services/physx/*.proto
+Copyright: 2025 zhiguo
+License: Apache-2.0
+
+Files: u2u/proto/api/math/*.pyi u2u/proto/api/services/physx/*.pyi
+Copyright: 2025 zhiguo
+License: Apache-2.0
+
+# Test files
+Files: tests/*.py tests/*.yaml tests/*.md
+Copyright: 2025 zhiguo
+License: Apache-2.0
+
+# Configuration and documentation in subdirectories
+Files: u2u/grpc_server/README.md configs/scene_config.proto.txt
+Copyright: 2025 zhiguo
+License: Apache-2.0

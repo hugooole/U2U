@@ -1,0 +1,166 @@
+syntax = "proto3";
+
+package rbs.api.proto.services.physx;
+
+import "u2u/proto/api/math/vec.proto";
+
+// Contact Friction Config
+message FrictionConfig {
+  // enable friction or not
+  bool enable = 1;
+}
+
+// CFL Config
+message CflConfig {
+  // enable cfl config or not
+  bool enable = 1;
+}
+
+// Contact Config
+message ContactConfig {
+  // enable contact config or not
+  bool enable = 1;
+
+  // contact friction config
+  FrictionConfig friction = 2;
+
+  // constitution model eg: ipc
+  string constitution = 3;
+
+  // contact minimum distance
+  double d_hat = 4;
+
+  // newton solver eps for velocity
+  double eps_velocity = 5;
+}
+
+// Integrator config
+message IntegratorConfig {
+  // type eg: "bdf1"
+  string type = 1;
+}
+
+// Newton Solver Config
+message NewtonConfig {
+  // max iteration of newton solver
+  uint32 max_iter = 1;
+
+  // if use adaptive tolerance
+  bool use_adaptive_tol = 2;
+
+  // tolerance for velocity
+  double velocity_tol = 3;
+
+  // tolerance for ccd
+  double ccd_tol = 4;
+
+  // tolerance for translate
+  double transrate_tol = 5;
+}
+
+// Linear System Config
+message LinearSystemConfig {
+  // rate of tolerance
+  double tol_rate = 1;
+
+  // which solver to use, eg: "linear_pcg"
+  string solver = 2;
+}
+
+// Line Search Config
+message LineSearchConfig {
+  // max num of iter for line search
+  uint32 max_iter = 1;
+
+  // if report energy
+  bool report_energy = 2;
+}
+
+// Collision Detection Config
+message CollisionDetectionConfig {
+  // which method to use to detect collision
+  string method = 1;
+}
+
+// Sanity Check Config
+message SanityCheckConfig {
+  // if enable sanity check config
+  bool enable = 1;
+
+  // normal: automatically export mesh to workspace
+  // quiet: do not export mesh
+  string mode = 2;
+}
+
+// Extras Config
+message DebugExtras {
+  // if dump surface
+  bool dump_surface = 1;
+}
+
+message StrictModeExtras {
+  // if use strict mode
+  bool enable = 1;
+}
+
+message ExtrasConfig {
+  // extra config for debug
+  DebugExtras debug = 1;
+
+  // extra config for strict mode
+  StrictModeExtras strict_mode = 2;
+
+  // Whether a robot can float (if false, root is fixed)
+  bool root_is_fixed = 3;
+}
+
+message DiffSimConfig {
+  bool enable = 1;
+}
+
+// Recovery configuration for handling simulation failures or instabilities
+message Recovery {
+  // TODO: Implement recovery configuration fields
+}
+
+message SceneConfig {
+
+  // simulation timestep
+  double dt = 1;
+
+  // gravity vector
+  rbs.api.proto.math.Vec3f gravity = 2;
+
+  // whether to enable CFL condition
+  CflConfig cfl = 3;
+
+  // integrator configuration
+  IntegratorConfig integrator = 4;
+
+  // newton solver configuration
+  NewtonConfig newton = 5;
+
+  // linear system solver config
+  LinearSystemConfig linear_system = 6;
+
+  // line search config
+  LineSearchConfig line_search = 7;
+
+  // contact configuration
+  ContactConfig contact = 8;
+
+  // collision detection config
+  CollisionDetectionConfig collision_detection = 9;
+
+  // sanity check configuration
+  SanityCheckConfig sanity_check = 10;
+
+  // differentiable simulation config
+  DiffSimConfig diff_sim = 11;
+
+  // additional features
+  ExtrasConfig extras = 12;
+
+  // Empty recovery
+  Recovery recovery = 13;
+}

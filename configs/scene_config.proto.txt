@@ -1,0 +1,56 @@
+dt: 0.01
+gravity {
+  x: 0.0
+  y: -9.8
+  z: 0.0
+}
+cfl {
+  enable: false
+}
+integrator {
+  type: "bdf1"
+}
+newton {
+  max_iter: 1024
+  use_adaptive_tol: false
+  velocity_tol: 0.05
+  ccd_tol: 1.0
+  transrate_tol: 0.1
+}
+linear_system {
+  tol_rate: 0.001
+  solver: "linear_pcg"
+}
+line_search {
+  max_iter: 8
+  report_energy: false
+}
+contact {
+  enable: true
+  friction {
+    enable: true
+  }
+  constitution: "ipc"
+  d_hat: 0.01
+  eps_velocity: 0.01
+}
+collision_detection {
+  method: "linear_bvh"
+}
+sanity_check {
+  enable: true
+  mode: "normal"
+}
+diff_sim {
+  enable: false
+}
+extras {
+  debug {
+    dump_surface: false
+  }
+  strict_mode {
+    enable: false
+  }
+}
+recovery {
+}

@@ -1,0 +1,89 @@
+# UsdParser test case configuration
+
+usd_parser_tests:
+  - name: "cartpole"
+    file: "assets/usd/cartpole.usda"
+    description: "Simple joint system covering multiple joint types"
+    expected:
+      num_articulations: 1
+      num_rigid_bodies: 0
+      num_colliders: 0
+      num_deformable_bodies: 0
+      num_cloth_bodies: 0
+      articulations:
+        - name: "cartPole"
+          num_joints: 4
+          joint_names:
+            - "railCartJoint"
+            - "cartPoleJoint"
+            - "polePoleJoint"
+          is_root_fixed: true
+
+  - name: "prismatic_joint"
+    file: "assets/usd/prismatic_joint.usda"
+    description: "Prismatic joint with PhysicsDriveAPI"
+    expected:
+      num_articulations: 1
+      num_rigid_bodies: 0
+      num_colliders: 75
+      num_deformable_bodies: 0
+      num_cloth_bodies: 0
+      articulations:
+        - name: "Articulation"
+          num_joints: 2
+          joint_names:
+            - "root_joint"
+            - "prismaticJoint"
+          is_root_fixed: true
+
+  - name: "motion_gen_demo"
+    file: "assets/usd/motion_gen_demo.usd"
+    description: "Contains xarm6_with_gripper robot, table and three target objects"
+    expected:
+      num_articulations: 1
+      num_rigid_bodies: 3
+      num_colliders: 1
+      num_deformable_bodies: 0
+      num_cloth_bodies: 0
+      articulations:
+        - name: "xarm6_with_gripper"
+          type: "articulation"
+          num_joints: 13
+          joint_names:
+            - "root_joint"
+            - "joint1"
+            - "joint2"
+            - "joint3"
+            - "joint4"
+            - "joint5"
+            - "joint6"
+            - "drive_joint"
+            - "left_finger_joint"
+            - "left_inner_knuckle_joint"
+            - "right_inner_knuckle_joint"
+            - "right_outer_knuckle_joint"
+            - "right_finger_joint"
+          is_root_fixed: true
+
+  - name: "ant"
+    file: "assets/usd/ant.usda"
+    description: "Ant quadruped robot with 8 revolute joints and free-floating base"
+    expected:
+      num_articulations: 1
+      num_rigid_bodies: 0
+      num_colliders: 0
+      num_deformable_bodies: 0
+      num_cloth_bodies: 0
+      articulations:
+        - name: "torso"
+          num_joints: 8
+          joint_names:
+            - "front_left_leg"
+            - "front_left_foot"
+            - "front_right_leg"
+            - "front_right_foot"
+            - "left_back_leg"
+            - "left_back_foot"
+            - "right_back_leg"
+            - "right_back_foot"
+          is_root_fixed: false

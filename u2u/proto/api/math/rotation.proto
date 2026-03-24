@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package rbs.api.proto.math;
+
+// Quaternion should be always uniform.
+message Quaternion {
+  double w = 1;
+  double x = 2;
+  double y = 3;
+  double z = 4;
+}

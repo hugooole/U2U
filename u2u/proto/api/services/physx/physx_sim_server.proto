@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package rbs.api.proto.services.physx;
+
+import "u2u/proto/api/math/vec.proto";
+import "u2u/proto/api/math/pose.proto";
+import "u2u/proto/api/services/physx/scene_config.proto";
+
+service PhysxSimService {
+  // Create scene with SceneConfig and populate scene with Usd file
+  rpc CreateAndPopulateScene(stream CreateAndPopulateSceneRequest) returns (CreateAndPopulateSceneResponse);
+
+  // Init World
+  rpc InitWorld(InitWorldRequest) returns (InitWorldResponse);
+
+  // Sync pose or points of physics entity to client
+  rpc SyncScene(SyncSceneRequest) returns (SyncSceneResponse);
+}
+
+message CreateAndPopulateSceneRequest{
+  message UsdChunk {
+    string scene_id = 2;    // uuid for the scene
+    bytes data = 1;         // A part of the file
+    int32 chunk_index = 3;  // Order in stream
+    bool is_last = 4;       // Indicates end
+  }
+
+  message InitScene {
+    string scene_id = 1;
+    SceneConfig scene_config = 2;
+  }
+
+  oneof payload {
+    InitScene first_config = 1;
+    UsdChunk usd_chunk = 2;
+  }
+}
+
+message CreateAndPopulateSceneResponse {
+
+  enum Status {
+    Unknown = 0;
+    Success = 1;
+    Failed = 2;
+  }
+
+  string message = 1;     // Response message
+  Status code = 2;       // Indicates success or failure
+}
+
+message InitWorldRequest {
+  // uuid for each scene
+  string scene_id = 1;
+}
+
+message InitWorldResponse {
+  string message = 1;
+  bool success = 2;
+}
+
+message SyncSceneRequest {
+  // Message for advance the world
+  message AdvanceRequest {}
+
+  // Message for stopping the simulation
+  message PauseRequest {}
+
+  // Message for finishing the simulation
+  message FinishRequest {}
+
+  // Message for resetting the simulation
+  message ResetRequest {}
+
+  oneof payload {
+    AdvanceRequest advance_request = 2;
+
+    PauseRequest pause_request = 3;
+
+    FinishRequest finish_request = 4;
+
+    ResetRequest reset_request = 5;
+  }
+}
+
+message SyncSceneResponse {
+  message RigidBodyPose {
+    string prim_path = 1;
+    rbs.api.proto.math.Pose transform = 2;
+    int64 timestamp = 3;
+  }
+
+  message SoftBodyPoints {
+    string prim_path = 1;
+    repeated rbs.api.proto.math.Vec3f points = 2;
+    int64 timestamp = 3;
+  }
+
+  message ResponseFrame {
+    repeated RigidBodyPose rigid_body_pose = 1;
+    repeated SoftBodyPoints soft_body_points = 2;
+  }
+
+  ResponseFrame response_frame = 1;
+}
