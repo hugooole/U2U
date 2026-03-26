@@ -17,7 +17,7 @@ from u2u.scene import Scene
 
 
 class HelloWorldDemo(PipelineBase):
-    def __init__(self, workdir: str, usd_path_or_stage: str | Usd.Stage, logger_level: Logger.Level = Logger.Debug):
+    def __init__(self, workdir: str, usd_path_or_stage: str | Usd.Stage, logger_level: Logger.Level = Logger.Info):
         super().__init__(workdir, usd_path_or_stage, logger_level=logger_level)
 
     def setup_config(self):

@@ -12,7 +12,7 @@ from u2u.scene import Scene
 
 class ArticulationDemo(PipelineBase):
     def __init__(self, workdir: str, usd_path_or_stage: str | Usd.Stage):
-        super().__init__(workdir, usd_path_or_stage, logger_level=Logger.Debug)
+        super().__init__(workdir, usd_path_or_stage, logger_level=Logger.Info)
 
     def setup_config(self):
         return Scene.default_config()

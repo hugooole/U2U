@@ -41,7 +41,7 @@ dev = [
     "sphinxcontrib-video>=0.4.1",
 ]
 examples = ["toppra", "mplib", "polyscope>=2.4.0", "tqdm>=4.67.1"]
-simulation = ["pyuipc>=0.0.20"]
+simulation = ["pyuipc>=0.0.22"]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
