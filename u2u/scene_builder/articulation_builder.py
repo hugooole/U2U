@@ -4,10 +4,10 @@ from collections import defaultdict, deque
 from typing import Dict, List, Optional
 
 import numpy as np
+import uipc.builtin as uipc_builtin
 from loguru import logger
 from pxr import Usd, UsdGeom
 from uipc import Transform, view
-from uipc import builtin as uipc_builtin
 from uipc.constitution import (
     AffineBodyConstitution,
     AffineBodyDrivingPrismaticJoint,
@@ -19,13 +19,7 @@ from uipc.constitution import (
     AffineBodyRevoluteJointExternalForce,
     SoftTransformConstraint,
 )
-from uipc.geometry import (
-    SimplicialComplex,
-    is_trimesh_closed,
-    label_surface,
-    linemesh,
-    merge,
-)
+from uipc.geometry import SimplicialComplex, is_trimesh_closed, label_surface, linemesh, merge
 from uipc.geometry import trimesh as trimesh_fn
 
 from u2u.pose import Pose
@@ -92,7 +86,9 @@ class ArticulationBuilder(SceneBuilderBase):
         else:
             env_offsets_arr = np.eye(4, dtype=np.float64)[np.newaxis]  # (1, 4, 4)
 
-        def get_geometry(prim_list: list[Usd.Prim] | Usd.Prim, link_prim: Usd.Prim) -> SimplicialComplex:
+        def get_geometry(
+            prim_list: list[Usd.Prim] | Usd.Prim, link_prim: Usd.Prim
+        ) -> tuple[SimplicialComplex, np.ndarray]:
             if isinstance(prim_list, Usd.Prim):
                 prim_list = [prim_list]
             assert len(prim_list) >= 1, "No prim found in the prim list"
@@ -257,12 +253,10 @@ class ArticulationBuilder(SceneBuilderBase):
                         stc = SoftTransformConstraint()
                         stc.apply_to(
                             link1_geo,
-                            np.array(
-                                [
-                                    1000.0,  # strength ratio of translation constraint
-                                    1000.0,  # strength ratio of rotation constraint
-                                ]
-                            ),
+                            np.array([
+                                1000.0,  # strength ratio of translation constraint
+                                1000.0,  # strength ratio of rotation constraint
+                            ]),
                         )
                         robot_transform = self._robot_transforms.get(robot_name, None)
                         assert robot_transform is not None, f"root_to_robot_transform for {robot_name} not found."
@@ -372,13 +366,13 @@ class ArticulationBuilder(SceneBuilderBase):
                     jm = linemesh(all_vs, all_es)
                     abrj.apply_to(
                         jm,
+                        [body0_slot] * _N,
+                        list[int](range(_N)),
                         [body1_slot] * _N,
                         list(range(_N)),
-                        [body0_slot] * _N,
-                        list(range(_N)),
-                        [100.0] * _N,
+                        [1000.0] * _N,
                     )
-                    abdrj.apply_to(jm, [100.0] * _N)
+                    abdrj.apply_to(jm, [1000.0] * _N)
                     abdrjef.apply_to(jm, [0.0] * _N)
                     view(jm.edges().find("init_angle"))[:] = angle_value
                     view(jm.edges().find("aim_angle"))[:] = angle_value
@@ -435,9 +429,9 @@ class ArticulationBuilder(SceneBuilderBase):
                     jm = linemesh(all_vs, all_es)
                     abpj.apply_to(
                         jm,
-                        [body1_slot] * _N,
-                        list(range(_N)),
                         [body0_slot] * _N,
+                        list(range(_N)),
+                        [body1_slot] * _N,
                         list(range(_N)),
                         [100.0] * _N,
                     )
