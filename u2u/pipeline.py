@@ -64,6 +64,7 @@ class PipelineBase(ABC):
         self.config = self.setup_config()
         parser_config = self.setup_usd_parser_config()
         self.scene: Scene = UsdParser(Scene(self.config), self.stage).parse_and_build_scene(**parser_config)
+        print(f"self.scene.config: {self.config}")
         self.save_scene_mode: Literal["init", "anim"] = "anim"
         self.robot: Articulation | None = None
         self._set_up_axis()

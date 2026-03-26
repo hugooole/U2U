@@ -3,6 +3,7 @@
 from typing import List, Optional
 
 import numpy as np
+from loguru import logger
 from pxr import Usd
 from uipc import Animation, view
 from uipc import builtin as uipc_builtin
@@ -316,9 +317,7 @@ class Articulation:
             self.joint_is_force_constrained[rows, j] = False
             self.joint_is_constrained[rows, j] = True
 
-    def set_joint_effort(
-        self, name: str, efforts: np.ndarray[np.float32], instance_ids: Optional[List[int]] = None
-    ) -> None:
+    def set_joint_effort(self, name: str, efforts: np.ndarray, instance_ids: Optional[List[int]] = None) -> None:
         """Set joint effort/force and automatically configure force constraint.
 
         This method automatically:
@@ -487,8 +486,8 @@ class Articulation:
 
         # Read current angles (all instances)
         curr_angles = view(geo.edges().find("angle"))[:]
-        is_constrained_attr = geo.edges().find(uipc_builtin.is_constrained)
-        is_force_constrained_attr = geo.edges().find(uipc_builtin.is_force_constrained)
+        is_constrained_attr = geo.edges().find("driving/is_constrained")
+        is_force_constrained_attr = geo.edges().find("external_torque/is_constrained")
 
         # Set constraint flags (broadcast from first row if needed)
         view(is_constrained_attr)[:] = self.joint_is_constrained[:, j]
@@ -500,7 +499,7 @@ class Articulation:
         self.joint_position[:, j] = curr_angles
 
         # Pre-fetch geometry attributes (avoids C++ find() calls inside conditionals)
-        aim_effort_attr = geo.edges().find("effort")
+        external_torque_attr = geo.edges().find("external_torque")
         aim_angle_attr = geo.edges().find("aim_angle")
 
         # Compute all masks once — no repeated AND or isin
@@ -510,9 +509,16 @@ class Articulation:
         pos_vel_mask = vel_mask | pos_mask
         force_constrained_mask = force_mask & self.joint_is_force_constrained[:, j]
 
-        # Force/effort control — direct boolean indexing, no np.where
+        # Torque control — direct boolean indexing, no np.where
         if np.any(force_constrained_mask):
-            view(aim_effort_attr)[force_constrained_mask] = self.joint_instruct_effort[force_constrained_mask, j]
+            torque_values = self.joint_instruct_effort[force_constrained_mask, j]
+            view(external_torque_attr)[force_constrained_mask] = torque_values
+            logger.debug(
+                "frame={} joint={} external_torque={}",
+                info.frame(),
+                joint_name,
+                torque_values,
+            )
 
         # Position/velocity control
         if np.any(pos_vel_mask):
@@ -530,6 +536,12 @@ class Articulation:
 
             # Write target angles — direct boolean indexing, no np.where
             view(aim_angle_attr)[pos_vel_mask] = target_angles[pos_vel_mask]
+            logger.debug(
+                "frame={} joint={} aim_angle={}",
+                info.frame(),
+                joint_name,
+                target_angles[pos_vel_mask],
+            )
 
     def prismatic_joint_anim(self, info: Animation.UpdateInfo):
         """Vectorized animation callback for prismatic joint.
@@ -547,9 +559,9 @@ class Articulation:
         # Read current state (all instances)
         curr_distances = view(geo.edges().find("distance"))[:]
         init_distance = view(geo.edges().find("init_distance"))[0]
-        curr_efforts = view(geo.edges().find("effort"))[:]
-        is_constrained_attr = geo.edges().find(uipc_builtin.is_constrained)
-        is_force_constrained_attr = geo.edges().find(uipc_builtin.is_force_constrained)
+        curr_forces = view(geo.edges().find("external_force"))[:]
+        is_constrained_attr = geo.edges().find("driving/is_constrained")
+        is_force_constrained_attr = geo.edges().find("external_force/is_constrained")
 
         # Set constraint flags
         view(is_constrained_attr)[:] = self.joint_is_constrained[:, j]
@@ -559,10 +571,10 @@ class Articulation:
         if info.frame() > 1:
             self.joint_velocity[:, j] = (curr_distances - self.joint_position[:, j]) / info.dt()
         self.joint_position[:, j] = curr_distances
-        self.joint_effort[:, j] = curr_efforts
+        self.joint_effort[:, j] = curr_forces
 
         # Pre-fetch geometry attributes (avoids C++ find() calls inside conditionals)
-        effort_attr = geo.edges().find("effort")
+        external_force_attr = geo.edges().find("external_force")
         aim_distance_attr = geo.edges().find("aim_distance")
 
         # Compute all masks once — no repeated AND or isin
@@ -572,7 +584,7 @@ class Articulation:
         pos_vel_mask = vel_mask | pos_mask
         force_constrained_mask = force_mask & self.joint_is_force_constrained[:, j]
 
-        # Force/effort control — direct boolean indexing, np.clip replaces max/min chain
+        # Force control — direct boolean indexing, np.clip replaces max/min chain
         if np.any(force_constrained_mask):
             lower_eff = self.joint_effort_lower_limits[j]
             upper_eff = self.joint_effort_upper_limits[j]
@@ -580,14 +592,14 @@ class Articulation:
             has_lower = not np.isnan(lower_eff)
             has_upper = not np.isnan(upper_eff)
             if has_lower or has_upper:
-                target_efforts = np.clip(
+                target_forces = np.clip(
                     instruct,
                     a_min=lower_eff if has_lower else None,
                     a_max=upper_eff if has_upper else None,
                 )
             else:
-                target_efforts = instruct
-            view(effort_attr)[force_constrained_mask] = target_efforts
+                target_forces = instruct
+            view(external_force_attr)[force_constrained_mask] = target_forces
 
         # Position/velocity control
         if np.any(pos_vel_mask):

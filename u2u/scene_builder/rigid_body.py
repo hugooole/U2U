@@ -14,6 +14,7 @@ from uipc.geometry import (
 from uipc.geometry import (
     trimesh as trimesh_fn,
 )
+from uipc.unit import MPa
 
 from ..mesh_factory import MeshFactory
 from ..usd_utils import get_prim_name, get_prim_type_name
@@ -165,7 +166,7 @@ class RigidBodyBuilder(SceneBuilderBase):
 
                 abd.apply_to(
                     sc=mesh,
-                    kappa=100 * 1e6,  # resistance coefficient (MPa)
+                    kappa=100 * MPa,  # resistance coefficient (MPa)
                     mass_density=mass_density,
                 )
 
@@ -281,7 +282,7 @@ class RigidBodyBuilder(SceneBuilderBase):
                 mass_density = get_mass_density(prim, default_value=1000.0)
                 abd.apply_to(
                     sc=mesh,
-                    kappa=100 * 1e6,  # resistance coefficient (MPa)
+                    kappa=100 * MPa,  # resistance coefficient (MPa)
                     mass_density=mass_density,
                 )
 

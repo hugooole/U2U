@@ -3,6 +3,7 @@
 import os.path as osp
 from typing import Any
 
+import numpy as np
 from loguru import logger
 from pxr import Usd
 from uipc import Logger
@@ -82,10 +83,10 @@ class ControlCartpoleTask(Task):
         self.pole2_inertia_matrix_com = self.runner.scene.get_inertia_matrix_com("/cartPole/pole2")
 
         logger.info(
-            f"rail_mass: {self.rail_mass}, cart_mass: {self.cart_mass}, pole1_mass: {self.pole1_mass}, pole2_mass: {self.pole2_mass}"
+            f"rail_mass: {self.rail_mass},\n cart_mass: {self.cart_mass},\n pole1_mass: {self.pole1_mass},\n pole2_mass: {self.pole2_mass}"
         )
         logger.info(
-            f"rail_inertia_matrix_com: {self.rail_inertia_matrix_com}, cart_inertia_matrix_com: {self.cart_inertia_matrix_com}, pole1_inertia_matrix_com: {self.pole1_inertia_matrix_com}, pole2_inertia_matrix_com: {self.pole2_inertia_matrix_com}"
+            f"rail_inertia_matrix_com: \n{self.rail_inertia_matrix_com},\n cart_inertia_matrix_com: \n{self.cart_inertia_matrix_com},\n pole1_inertia_matrix_com: \n{self.pole1_inertia_matrix_com},\n pole2_inertia_matrix_com: \n{self.pole2_inertia_matrix_com}"
         )
 
     def update(self) -> None:
@@ -96,13 +97,13 @@ class ControlCartpoleTask(Task):
             cart_pos = float(self.robot.get_joint_position(RAIL_CART_JOINT))
             cart_vel = float(self.robot.get_joint_velocity(RAIL_CART_JOINT))
             force = self.cart_pd.compute(0.0, cart_pos, cart_vel)
-            self.robot.set_joint_effort(RAIL_CART_JOINT, force)
+            self.robot.set_joint_effort(RAIL_CART_JOINT, np.array([force]))
 
 
 def main():
     workdir = AssetDir.output_path(__file__)
     cartpole_pipeline = CartpolePipeline(
-        workdir=workdir, usd_path_or_stage=osp.join(AssetDir.usd_path(), "cartpole.usda"), logger_level=Logger.Error
+        workdir=workdir, usd_path_or_stage=osp.join(AssetDir.usd_path(), "cartpole.usda"), logger_level=Logger.Critical
     )
     cartpole_pipeline.add_task(ControlCartpoleTask(name="control_cartpole", runner=cartpole_pipeline))
     cartpole_pipeline.run()

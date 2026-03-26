@@ -52,7 +52,6 @@ pre-commit run --all-files
 
 # Run examples using uv
 uv run examples/pick_and_place_with_mplib.py
-uv run examples/two_hands.py
 uv run examples/articulation_demo.py
 uv run examples/hello_world.py
 uv run examples/cartpole.py
@@ -121,7 +120,10 @@ python -m grpc.tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. $
 
 **Scene Builders (`u2u/scene_builder/`)**
 - `ArticulationBuilder`: Handles articulated robots with joints (revolute, prismatic, fixed)
+  - Joint constitution apply order: `body0_slot`, `body0_indices`, `body1_slot`, `body1_indices`, `strength`
+  - Default constraint strength: 1000.0 (revolute), 100.0 (prismatic)
 - `RigidBodyBuilder`: Processes rigid bodies with collision geometry
+  - Uses `uipc.unit.MPa` for resistance coefficient (e.g., `kappa=100 * MPa`)
 - `ClothBuilder`: Manages cloth/soft body simulations
 - `DeformableBuilder`: Handles deformable objects
 - Each builder extracts geometry, applies physics properties, and sets up constraints
@@ -132,12 +134,22 @@ python -m grpc.tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. $
 - Joint control modes: NONE, POSITION, VELOCITY (use `set_joint_effort()` for force/torque control with NONE mode)
 - Manages kinematic tree, joint limits, and control parameters
 - Handles root pose transformations and forward kinematics
+- Joint geometry attributes use string-based lookup:
+  - Revolute: `"angle"`, `"aim_angle"`, `"external_torque"`, `"driving/is_constrained"`, `"external_torque/is_constrained"`
+  - Prismatic: `"distance"`, `"aim_distance"`, `"external_force"`, `"driving/is_constrained"`, `"external_force/is_constrained"`
+- `set_joint_effort()` accepts `np.ndarray` (use `np.array([value])` for scalar)
 
 **Task Queue (`u2u/task_queue.py`)**
 - Async task system with priorities and dependencies
 - Task states: PENDING, RUNNING, COMPLETED, FAILED, CANCELLED
 - Supports callbacks on completion/failure
 - Use for motion planning, sequential robot operations, etc.
+
+**Controllers (`u2u/controllers.py`)**
+- `PDController`: Proportional-Derivative control (`u = Kp*(target-pos) - Kd*vel`)
+- `PIDController`: PD + integral term with anti-windup protection
+- Both support optional force/torque saturation limits
+- Tuning: `Kd = ζ × 2√(Kp × m)` where ζ=1.0-1.2 for slight overdamping
 
 **Pose (`u2u/pose.py`)**
 - Robust 3D pose representation with position and orientation (quaternion)
@@ -153,6 +165,14 @@ python -m grpc.tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. $
 5. **Export** → Updated transforms written back to USD for animation playback
 
 ### Key Patterns
+
+**Joint State Reset**: `reset_joint_position()` sets `joint_is_constrained=False` for ALL joints. Re-enable constraints explicitly after calling it:
+```python
+scene.reset_joint_position(robot_name="/robot", joint_positions={...})
+# IMPORTANT: re-constrain joints that should hold position
+robot.set_joint_constrained("/robot/joint1", True)
+robot.set_joint_position("/robot/joint1", np.array([target]))
+```
 
 **Contact Configuration**: Always define contact elements and insert into contact_tabular with friction/resistance coefficients:
 ```python
@@ -170,11 +190,9 @@ self.robot.set_joint_position(joint_name, target_position)  # Auto-sets POSITION
 # Or use velocity control
 self.robot.set_joint_velocity(joint_name, target_velocity)  # Auto-sets VELOCITY mode
 # Or use force/torque control
-self.robot.set_joint_effort(joint_name, force_value)  # Auto-sets NONE mode with force constraint
+self.robot.set_joint_effort(joint_name, np.array([force_value]))  # Auto-sets NONE mode with force constraint
 self.task_queue.add(MoveToTargetTask(...))
 ```
-
-**Custom PyPI Indices**: The project uses a custom PyPI server at `simulation-00.roboscience.xyz:8080` for `pyuipc`, `usd-core`, and platform-specific `toppra`/`mplib` packages.
 
 ## Project Structure
 
@@ -213,12 +231,13 @@ docs/                     # Sphinx documentation
 **Required Python Version**: 3.11+ (NumPy 1.26.0 is pinned, do not upgrade)
 
 **Core Dependencies**:
-- pyuipc: Physics simulation engine (custom build from rbs_pypi)
-- usd-core: USD library (custom build from rbs_pypi)
+- pyuipc: Physics simulation engine using libuipc
+- usd-core: USD library
 - polyscope: 3D visualization
 - trimesh, tetgen: Mesh processing
 - scipy: Scientific computing
 - warp-lang: NVIDIA Warp for GPU-accelerated kernels (required for `reset_affine_body_state()`)
+- loguru: Structured logging (used in articulation callbacks for debug-level joint state tracing)
 
 **Optional Dependencies**:
 - examples group: mplib (motion planning), toppra, tqdm

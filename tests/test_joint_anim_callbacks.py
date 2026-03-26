@@ -9,7 +9,7 @@ Covered scenarios:
 - POSITION / VELOCITY / NONE (force) control modes
 - Mixed modes across multiple instances
 - Joint position limits (upper / lower clamping)
-- Prismatic effort limits (lower / upper clip)
+- Prismatic external_force limits (lower / upper clip)
 - State tracking: joint_position, joint_velocity, joint_effort
 """
 
@@ -58,10 +58,10 @@ def _revolute_geo(N: int, curr_angles: np.ndarray | None = None):
         curr_angles = np.zeros(N, dtype=np.float32)
     attrs = {
         "angle": curr_angles.copy(),
-        "effort": np.zeros(N, dtype=np.float32),
+        "external_torque": np.zeros(N, dtype=np.float32),
         "aim_angle": np.zeros(N, dtype=np.float32),
-        uipc_builtin.is_constrained: np.zeros(N, dtype=np.int8),
-        uipc_builtin.is_force_constrained: np.zeros(N, dtype=np.int8),
+        "driving/is_constrained": np.zeros(N, dtype=np.int8),
+        "external_force/is_constrained": np.zeros(N, dtype=np.int8),
     }
     edges = MagicMock()
     edges.find.side_effect = lambda key: attrs[key]
@@ -77,10 +77,10 @@ def _prismatic_geo(N: int, curr_distances: np.ndarray | None = None, init_distan
     attrs = {
         "distance": curr_distances.copy(),
         "init_distance": np.array([init_distance], dtype=np.float32),
-        "effort": np.zeros(N, dtype=np.float32),
+        "external_force": np.zeros(N, dtype=np.float32),
         "aim_distance": np.zeros(N, dtype=np.float32),
-        uipc_builtin.is_constrained: np.zeros(N, dtype=np.int8),
-        uipc_builtin.is_force_constrained: np.zeros(N, dtype=np.int8),
+        "driving/is_constrained": np.zeros(N, dtype=np.int8),
+        "external_force/is_constrained": np.zeros(N, dtype=np.int8),
     }
     edges = MagicMock()
     edges.find.side_effect = lambda key: attrs[key]
@@ -140,8 +140,8 @@ class TestRevoluteJointAnim:
         expected = curr + np.array([10.0, -5.0, 0.0], dtype=np.float32) * _DT
         np.testing.assert_allclose(attrs["aim_angle"], expected, rtol=1e-5)
 
-    def test_force_control_writes_effort(self):
-        """NONE+force mode: effort written, aim_angle untouched."""
+    def test_torque_control_writes_external_torque(self):
+        """NONE+force mode: external_torque written, aim_angle untouched."""
         N = 2
         art = _make_art(N)
         j = 0
@@ -153,11 +153,11 @@ class TestRevoluteJointAnim:
         with patch(_PATCH_VIEW, new=lambda x: x):
             art.revolute_joint_anim(_make_info(geo))
 
-        np.testing.assert_allclose(attrs["effort"], [5.0, 10.0], rtol=1e-5)
+        np.testing.assert_allclose(attrs["external_torque"], [5.0, 10.0], rtol=1e-5)
         np.testing.assert_allclose(attrs["aim_angle"], [0.0, 0.0], atol=1e-6)
 
     def test_none_without_force_constraint_does_nothing(self):
-        """NONE mode without force constraint: no writes to effort or aim_angle."""
+        """NONE mode without force constraint: no writes to external_torque or aim_angle."""
         N = 2
         art = _make_art(N)
         j = 0
@@ -168,7 +168,7 @@ class TestRevoluteJointAnim:
         with patch(_PATCH_VIEW, new=lambda x: x):
             art.revolute_joint_anim(_make_info(geo))
 
-        np.testing.assert_allclose(attrs["effort"], [0.0, 0.0], atol=1e-6)
+        np.testing.assert_allclose(attrs["external_torque"], [0.0, 0.0], atol=1e-6)
         np.testing.assert_allclose(attrs["aim_angle"], [0.0, 0.0], atol=1e-6)
 
     def test_mixed_modes_dispatched_independently(self):
@@ -196,8 +196,8 @@ class TestRevoluteJointAnim:
         assert attrs["aim_angle"][1] == pytest.approx(1.0 + 100.0 * _DT)
         assert attrs["aim_angle"][2] == pytest.approx(0.0)  # NONE — untouched
         assert attrs["aim_angle"][3] == pytest.approx(0.0)  # NONE — untouched
-        assert attrs["effort"][2] == pytest.approx(7.0)
-        assert attrs["effort"][3] == pytest.approx(0.0)  # no force constraint
+        assert attrs["external_torque"][2] == pytest.approx(7.0)
+        assert attrs["external_torque"][3] == pytest.approx(0.0)  # no force constraint
 
     def test_upper_limit_clamped(self):
         """Target angle above upper limit is clamped down."""
@@ -309,8 +309,8 @@ class TestPrismaticJointAnim:
         expected = curr + np.array([1.0, -2.0], dtype=np.float32) * _DT
         np.testing.assert_allclose(attrs["aim_distance"], expected, rtol=1e-5)
 
-    def test_force_control_writes_effort(self):
-        """NONE+force mode: effort written, aim_distance untouched."""
+    def test_force_control_writes_external_force(self):
+        """NONE+force mode: external_force written, aim_distance untouched."""
         N = 2
         art = _make_art(N)
         j = 0
@@ -322,11 +322,11 @@ class TestPrismaticJointAnim:
         with patch(_PATCH_VIEW, new=lambda x: x):
             art.prismatic_joint_anim(_make_info(geo))
 
-        np.testing.assert_allclose(attrs["effort"], [3.0, 6.0], rtol=1e-5)
+        np.testing.assert_allclose(attrs["external_force"], [3.0, 6.0], rtol=1e-5)
         np.testing.assert_allclose(attrs["aim_distance"], [0.0, 0.0], atol=1e-6)
 
-    def test_effort_clamped_by_lower_limit(self):
-        """Effort below lower_eff is clipped up to the limit."""
+    def test_force_clamped_by_lower_limit(self):
+        """Force below lower_eff is clipped up to the limit."""
         N = 2
         art = _make_art(N)
         j = 0
@@ -339,11 +339,11 @@ class TestPrismaticJointAnim:
         with patch(_PATCH_VIEW, new=lambda x: x):
             art.prismatic_joint_anim(_make_info(geo))
 
-        assert attrs["effort"][0] == pytest.approx(5.0)  # above lower → unchanged
-        assert attrs["effort"][1] == pytest.approx(2.0)  # clipped up
+        assert attrs["external_force"][0] == pytest.approx(5.0)  # above lower → unchanged
+        assert attrs["external_force"][1] == pytest.approx(2.0)  # clipped up
 
-    def test_effort_clamped_by_upper_limit(self):
-        """Effort above upper_eff is clipped down to the limit."""
+    def test_force_clamped_by_upper_limit(self):
+        """Force above upper_eff is clipped down to the limit."""
         N = 2
         art = _make_art(N)
         j = 0
@@ -356,8 +356,8 @@ class TestPrismaticJointAnim:
         with patch(_PATCH_VIEW, new=lambda x: x):
             art.prismatic_joint_anim(_make_info(geo))
 
-        assert attrs["effort"][0] == pytest.approx(2.0)  # below upper → unchanged
-        assert attrs["effort"][1] == pytest.approx(4.0)  # clipped down
+        assert attrs["external_force"][0] == pytest.approx(2.0)  # below upper → unchanged
+        assert attrs["external_force"][1] == pytest.approx(4.0)  # clipped down
 
     def test_position_limit_accounts_for_init_distance(self):
         """Position limits use combined = target + init_distance.
@@ -403,7 +403,7 @@ class TestPrismaticJointAnim:
         assert attrs["aim_distance"][0] == pytest.approx(0.2)
         assert attrs["aim_distance"][1] == pytest.approx(0.1, abs=1e-5)
 
-    def test_state_updated_joint_position_and_effort(self):
+    def test_state_updated_joint_position_and_force(self):
         """joint_position and joint_effort track curr values after callback."""
         N = 3
         art = _make_art(N)
@@ -412,7 +412,7 @@ class TestPrismaticJointAnim:
         curr_eff = np.array([1.0, 2.0, 3.0], dtype=np.float32)
 
         attrs, geo = _prismatic_geo(N, curr_distances=curr)
-        attrs["effort"][:] = curr_eff
+        attrs["external_force"][:] = curr_eff
         with patch(_PATCH_VIEW, new=lambda x: x):
             art.prismatic_joint_anim(_make_info(geo))
 
@@ -441,4 +441,4 @@ class TestPrismaticJointAnim:
         assert attrs["aim_distance"][0] == pytest.approx(0.5)
         assert attrs["aim_distance"][1] == pytest.approx(10.0 * _DT)
         assert attrs["aim_distance"][2] == pytest.approx(0.0)  # NONE — untouched
-        assert attrs["effort"][2] == pytest.approx(8.0)
+        assert attrs["external_force"][2] == pytest.approx(8.0)
